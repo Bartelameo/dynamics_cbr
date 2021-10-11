@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 import requests
 import time
 from datetime import date, datetime
-from config import host, user, password, db_name
+from config import host, user, password, db_name, port
 import psycopg2
 from decimal import *
 
@@ -61,7 +61,8 @@ def create_table(name_table, columns):
             host=host,
             user=user,
             password=password,
-            database=db_name
+            database=db_name,
+            port = port
         )
         connection.autocommit = True
 
@@ -86,7 +87,8 @@ def insert_data(name_table,columns, value):
             host=host,
             user=user,
             password=password,
-            database=db_name
+            database=db_name,
+            port=port
         )
         connection.autocommit = True
     #insert data into a table
@@ -124,12 +126,15 @@ def main():
     currencies = input(f"Введите название валюты в том виде, в котором она записана на сайте {url0}: ")
     name_table = transliterate(currencies.lower())
     dict_currencies = get_dict_currencieses(url0)
+    count = 0
     try:
         code_currencies = dict_currencies[currencies.lower()]
         data = get_data(code_currencies)
         create_table(name_table, data[0])
         for d in data[1:]:
             insert_data(name_table, data[0], d)
+            count += 1
+        print(f"В базу записано {count} значений валюты {currencies}")
     except Exception as _ex:
         print("На сайте нет такой валюты. Прощайте :(")
 

@@ -1,4 +1,5 @@
-host = "192.168.1.68"
-user = "encost"
-password = "321"
-db_name = "encost"
+host = "IP_server"
+user = "user"
+password = "password"
+db_name = "db_name"
+port = "5432" #default port 5432 postgresql
