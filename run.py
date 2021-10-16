@@ -58,7 +58,7 @@ def get_data(code_currencies):
     return data
 
 
-def create_table(name_table, columns):
+def connection_to_db(name_table, columns, value=0):
     try:
         # connect to exist database
         connection = psycopg2.connect(
@@ -66,48 +66,23 @@ def create_table(name_table, columns):
             user=user,
             password=password,
             database=db_name,
-            port=port
-        )
+            port=port)
         connection.autocommit = True
-
-        # create a new table if not exist
-        with connection.cursor() as cursor:
-            cursor.execute(
-                f"CREATE TABLE IF NOT EXISTS {name_table}({columns[0]} DATE UNIQUE, "
-                f"{columns[1]} INTEGER, {columns[2]} REAL);")
-            print(f"[INFO] Table {name_table} created successfully")
-
-    except Exception as _ex:
-        print("[INFO] Error while working with PostgreSQL", _ex)
-    finally:
-        if connection:
-            connection.close()
-            # print("[INFO] PostgreSQL connection closed")
-
-
-def insert_data(name_table, columns, value):
-    try:
-        # connect to exist database
-        connection = psycopg2.connect(
-            host=host,
-            user=user,
-            password=password,
-            database=db_name,
-            port=port
-        )
-        connection.autocommit = True
-        # insert data into a table
-        insert = (f"INSERT INTO {name_table} ({columns[0]}, {columns[1]}, {columns[2]}) VALUES"
-                  f" ('{value[0]}',{int(value[1])}, {Decimal(value[2].replace(',', '.'))});")
+        if value != 0:
+            insert = (f"INSERT INTO {name_table} ({columns[0]}, {columns[1]}, {columns[2]}) "
+                      f"VALUES ('{value[0]}',{int(value[1])}, {Decimal(value[2].replace(',', '.'))});")
+            massage = "[INFO] Data was succefully inserted"
+        else:
+            insert = (f"CREATE TABLE IF NOT EXISTS {name_table}({columns[0]} DATE UNIQUE, "
+                      f"{columns[1]} INTEGER, {columns[2]} REAL);")
+            massage = f"[INFO] Table {name_table} created successfully"
         with connection.cursor() as cursor:
             cursor.execute(insert)
-        # print("[INFO] Data was succefully inserted")
     except Exception as _ex:
         print("[INFO] Error while working with PostgreSQL", _ex)
     finally:
         if connection:
             connection.close()
-            # print("[INFO] PostgreSQL connection closed")
 
 
 def transliterate(name):
@@ -136,9 +111,9 @@ def main():
     try:
         code_currencies = dict_currencies[currencies.lower()]
         data = get_data(code_currencies)
-        create_table(name_table, data[0])
+        connection_to_db(name_table, data[0])
         for d in data[1:]:
-            insert_data(name_table, data[0], d)
+            connection_to_db(name_table, data[0], d)
             count += 1
         print(f"В базу записано {count} значений валюты {currencies}")
     except Exception as _ex:
