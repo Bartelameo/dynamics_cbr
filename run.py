@@ -41,8 +41,8 @@ def get_data(code_currencies):
            f'{code_currencies}&UniDbQuery.From=01.01.1992&UniDbQuery.To={today}')
     try:
         r = requests.get(url=url, headers=headers, timeout=5)
-    except TooManyRedirects as e:
-        print(f'{url} : {e}')
+    except Exception as _ex:
+        print(f'[INFO] {url} : {_ex}')
     soup = BeautifulSoup(r.text, "html.parser")
     block_data = soup.find('div', class_="table")
     data = []
@@ -53,8 +53,11 @@ def get_data(code_currencies):
     data.append(name_of_columns)
     for i in alldata[2:]:
         value = i.text.split()
-        value[0] = datetime.strptime(value[0], '%d.%m.%Y').strftime("%Y-%m-%d")
-        data.append(value)
+        try:
+            value[0] = datetime.strptime(value[0], '%d.%m.%Y').strftime("%Y-%m-%d")
+            data.append(value)
+        except Exception as _ex:
+            print("[INFO] Error while working with data from url", _ex)
     return data
 
 
@@ -81,11 +84,10 @@ def connection_to_db(name_table, columns, value=0):
             cursor.execute(insert)
     except Exception as _ex:
         print("[INFO] Error while working with PostgreSQL", _ex)
-        return False
+        return True
     finally:
         if connection:
             connection.close()
-        return True
 
 
 def transliterate(name):
