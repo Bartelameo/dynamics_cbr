@@ -81,9 +81,11 @@ def connection_to_db(name_table, columns, value=0):
             cursor.execute(insert)
     except Exception as _ex:
         print("[INFO] Error while working with PostgreSQL", _ex)
+        return False
     finally:
         if connection:
             connection.close()
+        return True
 
 
 def transliterate(name):
@@ -109,16 +111,22 @@ def main():
     name_table = transliterate(currencies)
     dict_currencies = get_dict_currencieses(url0)
     if currencies not in dict_currencies:
-        print("[INFO] Валюта не найдена. Выход")
+        print("[INFO] Валюта не найдена")
     else:
         code_currencies = dict_currencies[currencies]
         data = get_data(code_currencies)
-        connection_to_db(name_table, data[0])
-        count = len(data) - 1
-        print(f'[INFO] Валюта найдена! Обрабатываем динамику валюты за {count} дней(я)')
-        for d in data[1:]:
-            connection_to_db(name_table, data[0], d)
-        print(f"[INFO] В базу записаны все значений валюты!")
+        try:
+            connection_to_db(name_table, data[0])
+            print(f'[INFO] Валюта найдена! Обрабатываем динамику валюты за {len(data) - 1} дней(я)')
+            count = 0
+            for d in data[1:]:
+                if connection_to_db(name_table, data[0], d):
+                    print(f"[INFO] В базу записаны {count} новых значений валюты!")
+                    break
+                count += 1
+            print(f"[INFO] В базу записаны все значения валюты!")
+        except Exception:
+            pass
 
 
 if __name__ == "__main__":
