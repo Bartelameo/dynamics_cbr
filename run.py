@@ -105,20 +105,20 @@ def transliterate(name):
 
 def main():
     url0 = "https://cbr.ru/currency_base/dynamics/"
-    currencies = input(f"Введите название валюты в том виде, в котором она записана на сайте {url0}: ")
-    name_table = transliterate(currencies.lower())
+    currencies = input(f"Введите название валюты в том виде, в котором она записана на сайте {url0}: ").lower()
+    name_table = transliterate(currencies)
     dict_currencies = get_dict_currencieses(url0)
-    count = 0
-    try:
-        code_currencies = dict_currencies[currencies.lower()]
+    if currencies not in dict_currencies:
+        print("[INFO] Валюта не найдена. Выход")
+    else:
+        code_currencies = dict_currencies[currencies]
         data = get_data(code_currencies)
         connection_to_db(name_table, data[0])
+        count = len(data) - 1
+        print(f'[INFO] Валюта найдена! Обрабатываем динамику валюты за {count} дней(я)')
         for d in data[1:]:
             connection_to_db(name_table, data[0], d)
-            count += 1
-        print(f"В базу записано {count} значений валюты {currencies}")
-    except Exception as _ex:
-        print("На сайте нет такой валюты. Прощайте :(")
+        print(f"[INFO] В базу записаны все значений валюты!")
 
 
 if __name__ == "__main__":
