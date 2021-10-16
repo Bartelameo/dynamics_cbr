@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 import requests
 import time
 from datetime import date, datetime
-from config import host, user, password, db_name, port
+from config import host, user, password, db_name, port, sslmode
 import psycopg2
 from decimal import *
 
@@ -66,7 +66,8 @@ def connection_to_db(name_table, columns, value=0):
             user=user,
             password=password,
             database=db_name,
-            port=port)
+            port=port,
+            sslmode=sslmode)
         connection.autocommit = True
         if value != 0:
             insert = (f"INSERT INTO {name_table} ({columns[0]}, {columns[1]}, {columns[2]}) "
