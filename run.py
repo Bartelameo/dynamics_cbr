@@ -1,46 +1,37 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-from bs4 import BeautifulSoup
 import requests
 import time
-from datetime import date, datetime
-from config import host, user, password, db_name, port, sslmode
 import psycopg2
-from decimal import *
+from datetime import date, datetime
+from bs4 import BeautifulSoup
+from decimal import Decimal
+
+from config import host, user, password, db_name, port, sslmode
+from headers import headers as h
 
 
 def get_dict_currencieses(url):
-    headers = {
-        "user-agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
-                       "Chrome/94.0.4606.71 Safari/537.36"),
-        "accept": "text/css,*/*;q=0.1",
-    }
     try:
-        r = requests.get(url=url, headers=headers, timeout=5)
+        r = requests.get(url=url, headers=h, timeout=5)
     except TooManyRedirects as e:
         print(f'{url} : {e}')
-    time.sleep(1)
     soup = BeautifulSoup(r.text, "html.parser")
     select_currencies = soup.find_all('select', id="UniDbQuery_VAL_NM_RQ")
     dict_currencies = {}
     for i in select_currencies[0].find_all("option"):
-        currencie = i.string.replace("\n", "").split("  ")[14].lower().replace("\r", "").rstrip()  # HA-HA(!)
+        currencie = i.string.strip().lower()
         dict_currencies[currencie] = i.get("value")
     return dict_currencies
 
 
 def get_data(code_currencies):
-    headers = {
-        "user-agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
-                       "Chrome/94.0.4606.71 Safari/537.36"),
-        "accept": "text/css,*/*;q=0.1",
-    }
     today = datetime.today().strftime('%d.%m.%Y')
     url = (f'https://cbr.ru/currency_base/dynamics/?UniDbQuery.Posted=True&UniDbQuery.so='
            f'1&UniDbQuery.mode=1&UniDbQuery.date_req1=&UniDbQuery.date_req2=&UniDbQuery.VAL_NM_RQ='
            f'{code_currencies}&UniDbQuery.From=01.01.1992&UniDbQuery.To={today}')
     try:
-        r = requests.get(url=url, headers=headers, timeout=5)
+        r = requests.get(url=url, headers=h, timeout=5)
     except Exception as _ex:
         print(f'[INFO] {url} : {_ex}')
     soup = BeautifulSoup(r.text, "html.parser")
@@ -56,8 +47,11 @@ def get_data(code_currencies):
         try:
             value[0] = datetime.strptime(value[0], '%d.%m.%Y').strftime("%Y-%m-%d")
             data.append(value)
-        except Exception as _ex:
-            print("[INFO] Error while working with data from url", _ex)
+        except IndexError:
+            print("[INFO] IndexError while working with data from url")
+        except ValueError:
+            print("[INFO] ValueError while working with data from url")
+
     return data
 
 
@@ -83,7 +77,7 @@ def connection_to_db(name_table, columns, value=0):
         with connection.cursor() as cursor:
             cursor.execute(insert)
     except Exception as _ex:
-        print("[INFO] Error while working with PostgreSQL", _ex)
+        print("[INFO] Exception while working with PostgreSQL")
         return True
     finally:
         if connection:
@@ -102,9 +96,10 @@ def transliterate(name):
               '[': '', ']': '', '{': '', '}': '', 'ґ': '', 'ї': '', 'є': '', 'Ґ': 'g', 'Ї': 'i',
               'Є': 'e', '—': ''}
 
-    for key in slovar:
-        name = name.replace(key, slovar[key])
-    return name
+    name_table = []
+    for n in name:
+        name_table.append(slovar[n])
+    return "".join(name_table)
 
 
 def main():
